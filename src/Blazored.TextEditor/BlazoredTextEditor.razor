@@ -142,6 +142,11 @@
         }
     }
 
+    protected override bool ShouldRender()
+    {
+        return !IsRendered;
+    }
+
     private string previousContent = string.Empty;
 
     private async Task LoadContent()
