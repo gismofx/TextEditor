@@ -17,6 +17,7 @@ namespace Blazored.TextEditor
             string[] formats,
             string debugLevel,
             bool syntax,
+            bool bindContent,
             DotNetObjectReference<BlazoredTextEditor> reference)
         {
             return jsRuntime.InvokeAsync<object>(

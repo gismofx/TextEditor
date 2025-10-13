@@ -107,7 +107,7 @@
     public string Content { get; set; }
 
     [Parameter]
-    public EventCallback<string> ContentChanged { get; set; }
+    public EventCallback<string>? ContentChanged { get; set; }
 
     private ElementReference QuillElement;
     private ElementReference ToolBar;
@@ -130,6 +130,7 @@
                 Formats,
                 DebugLevel,
                 Syntax,
+                ContentChanged is null,
                 _ObjectReference
 
             );
@@ -283,7 +284,7 @@
         if (IsRendered)
         {
             Content = await GetContent();
-            await ContentChanged.InvokeAsync(Content);
+            await ContentChanged?.InvokeAsync(Content);
         }
 
     }
@@ -298,7 +299,7 @@
             Console.WriteLine($"Quill Editor Element: {EditorId} Invoked Change in Blazor");
             Console.WriteLine("    Contents:" + delta.ToString());
         }
-        await ContentChanged.InvokeAsync(delta.ToString());
+        await ContentChanged?.InvokeAsync(delta.ToString());
     }
 
 

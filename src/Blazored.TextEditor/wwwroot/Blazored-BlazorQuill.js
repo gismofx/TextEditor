@@ -7,7 +7,7 @@
 
         createQuill: function (
             quillElement, toolBar, readOnly,
-            placeholder, theme, formats, debugLevel, syntax, dotNetObjectRef) {  
+            placeholder, theme, formats, debugLevel, syntax, bindContent, dotNetObjectRef) {  
 
             Quill.register('modules/blotFormatter', QuillBlotFormatter.default);
 
@@ -31,15 +31,23 @@
 
             QuillFunctions.dotNetRefs.set(quillElement.id, dotNetObjectRef);
 
-            //On Blur - we update the object in dotnet
-            quillElement.__quill.editor.scroll.domNode.addEventListener('blur',
-                () => {
-                    if (quillElement.__quill.options.debug === "info") {
-                        console.log('info: Quill Editor blur event for ' + quillElement.id);
-                    }
-                    QuillFunctions.dotNetRefs.get(quillElement.id).invokeMethodAsync('DeltaChanged', QuillFunctions.getQuillContent(quillElement));
-                }
-            );
+            if (bindContent) { 
+                //On Blur - we update the object in dotnet
+                quillElement.__quill.editor.scroll.domNode.addEventListener('blur',
+                    //async () => {
+                    //    if (quillElement.__quill.options.debug === "info") {
+                    //        console.log('info: Quill Editor blur event for ' + quillElement.id);
+                    //    }
+                    //    await QuillFunctions.dotNetRefs.get(quillElement.id).invokeMethodAsync('DeltaChanged', QuillFunctions.getQuillContent(quillElement));
+                    //    //QuillFunctions.dotNetRefs.get(quillElement.id).invokeMethodAsync('DeltaChanged', QuillFunctions.getQuillContent(quillElement));
+                    //}
+                    () => {
+                        if (quillElement.__quill.options.debug === "info") {
+                            console.log('info: Quill Editor blur event for ' + quillElement.id);
+                        }
+                        QuillFunctions.dotNetRefs.get(quillElement.id).invokeMethod('DeltaChanged', QuillFunctions.getQuillContent(quillElement));
+                    });
+            }
 
         },
         getQuillContent: function(quillElement) {
