@@ -23,7 +23,7 @@ namespace Blazored.TextEditor
             return jsRuntime.InvokeAsync<object>(
                 "QuillFunctions.createQuill",
                 quillElement, toolbar, readOnly,
-                placeholder, theme, formats, debugLevel, syntax, reference);
+                placeholder, theme, formats, debugLevel, syntax, bindContent, reference);
         }
 
         internal static ValueTask<string> GetText(

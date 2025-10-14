@@ -34,19 +34,18 @@
             if (bindContent) { 
                 //On Blur - we update the object in dotnet
                 quillElement.__quill.editor.scroll.domNode.addEventListener('blur',
-                    //async () => {
-                    //    if (quillElement.__quill.options.debug === "info") {
-                    //        console.log('info: Quill Editor blur event for ' + quillElement.id);
-                    //    }
-                    //    await QuillFunctions.dotNetRefs.get(quillElement.id).invokeMethodAsync('DeltaChanged', QuillFunctions.getQuillContent(quillElement));
-                    //    //QuillFunctions.dotNetRefs.get(quillElement.id).invokeMethodAsync('DeltaChanged', QuillFunctions.getQuillContent(quillElement));
-                    //}
-                    () => {
+                    async () => {
                         if (quillElement.__quill.options.debug === "info") {
                             console.log('info: Quill Editor blur event for ' + quillElement.id);
                         }
-                        QuillFunctions.dotNetRefs.get(quillElement.id).invokeMethod('DeltaChanged', QuillFunctions.getQuillContent(quillElement));
+                        await QuillFunctions.dotNetRefs.get(quillElement.id).invokeMethodAsync('DeltaChanged', QuillFunctions.getQuillContent(quillElement));
                     });
+                    //() => {
+                    //    if (quillElement.__quill.options.debug === "info") {
+                    //        console.log('info: Quill Editor blur event for ' + quillElement.id);
+                    //    }
+                    //    QuillFunctions.dotNetRefs.get(quillElement.id).invokeMethod('DeltaChanged', QuillFunctions.getQuillContent(quillElement));
+                    //});
             }
 
         },
