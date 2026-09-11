@@ -1,0 +1,80 @@
+name: Publish NuGet Package
+
+on:
+  release:
+    types: [published]   # GitHub web UI: Releases -> Draft new release -> Publish
+  workflow_dispatch:     # Or run by hand from the Actions tab
+    inputs:
+      version:
+        description: 'Package version (e.g. 1.2.0)'
+        required: true
+        default: '1.2.0'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write   # Required for NuGet trusted publishing (OIDC)
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Both SDKs, because the library multi-targets net8.0;net10.0.
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.x
+            10.x
+
+      # A release supplies the version through the tag (v1.2.0 -> 1.2.0); a manual run supplies
+      # it as an input. Either way the version comes from outside the csproj, so a release never
+      # silently ships whatever number happened to be committed.
+      - name: Extract version from tag or input
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Pack
+        run: >
+          dotnet pack src/Blazored.TextEditor/Blazored.TextEditor.csproj
+          -c Release
+          -p:PackageVersion=${{ steps.version.outputs.VERSION }}
+          --output ./nupkg
+
+      # Same guard as the build workflow: prove the deliverable is intact before it is public,
+      # because an unlisted-and-replaced version is the only remedy afterwards.
+      - name: Verify package contents
+        run: |
+          set -e
+          pkg=$(ls ./nupkg/*.nupkg)
+          echo "Inspecting $pkg"
+          unzip -l "$pkg"
+          for entry in \
+            lib/net8.0/Blazored.TextEditor.dll \
+            lib/net10.0/Blazored.TextEditor.dll \
+            staticwebassets/Blazored-BlazorQuill.js \
+            staticwebassets/quill-blot-formatter.min.js
+          do
+            unzip -l "$pkg" | grep -q "$entry" || { echo "MISSING FROM PACKAGE: $entry"; exit 1; }
+          done
+          echo "All expected entries present."
+
+      # Trusted publishing: no API key is stored in this repo. It requires a policy on
+      # nuget.org for this owner, this repository and this workflow file - without one, this
+      # step fails and nothing is pushed.
+      - name: NuGet login (OIDC -> temporary API key)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: gismofx
+
+      - name: Push to NuGet
+        run: dotnet nuget push ./nupkg/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --skip-duplicate

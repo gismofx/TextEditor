@@ -1,0 +1,63 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Both SDKs, because the library multi-targets net8.0;net10.0.
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.x
+            10.x
+
+      # Scoped to the library on purpose: the three sample apps in this repo still target
+      # net9.0, so a bare `dotnet restore` at the root pulls in a framework this job does not
+      # install, and the run fails for a reason that has nothing to do with the package.
+      - name: Restore
+        run: dotnet restore src/Blazored.TextEditor/Blazored.TextEditor.csproj
+
+      - name: Build
+        run: dotnet build src/Blazored.TextEditor/Blazored.TextEditor.csproj -c Release --no-restore
+
+      # Packing here is what turns a packaging mistake into a red PR instead of a bad release.
+      - name: Pack
+        run: dotnet pack src/Blazored.TextEditor/Blazored.TextEditor.csproj -c Release --no-build --output ./nupkg
+
+      # The package is the deliverable, so assert what is inside it. A green build proves the
+      # code compiles; it says nothing about whether the JS assets or both target frameworks
+      # actually shipped.
+      - name: Verify package contents
+        run: |
+          set -e
+          pkg=$(ls ./nupkg/*.nupkg)
+          echo "Inspecting $pkg"
+          unzip -l "$pkg"
+          for entry in \
+            lib/net8.0/Blazored.TextEditor.dll \
+            lib/net10.0/Blazored.TextEditor.dll \
+            staticwebassets/Blazored-BlazorQuill.js \
+            staticwebassets/quill-blot-formatter.min.js
+          do
+            unzip -l "$pkg" | grep -q "$entry" || { echo "MISSING FROM PACKAGE: $entry"; exit 1; }
+          done
+          echo "All expected entries present."
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: nupkg
+          path: ./nupkg/*.nupkg
