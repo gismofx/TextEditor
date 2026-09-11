@@ -9,7 +9,8 @@
     <Authors>Michael Washington; CPE</Authors>
     <Company>CPE</Company>
     <Description>Rich text editor for Blazor applications, built on Quill JS. Fork of Blazored.TextEditor, which is deprecated and unlisted upstream; adds one-way and two-way content binding and support for multiple editors on a page.</Description>
-    <Copyright>Copyright 2025 (c) Michael Washington. All rights reserved.</Copyright>
+    <!-- MIT requires the original notices to travel with the software. Upstream's two differ from each other (LICENSE says Blazored 2019, upstream metadata says Michael Washington); both are kept, and the fork is added rather than substituted. -->
+    <Copyright>Copyright (c) 2019 Blazored; Copyright (c) 2025 Michael Washington; portions copyright (c) 2026 CP Engineering</Copyright>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
 
@@ -54,6 +55,8 @@
 
   <ItemGroup>
     <None Include="icon.png" Pack="true" PackagePath="\" />
+    <!-- The licence text itself ships inside the package: PackageLicenseExpression only records the SPDX id on nuget.org, which leaves a binary consumer with no notice. -->
+    <None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>
