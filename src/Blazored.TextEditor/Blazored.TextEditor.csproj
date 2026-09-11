@@ -16,8 +16,8 @@
 
     <!-- NuGet settings -->
     <PackageId>CPE.BlazorQuill</PackageId>
-    <!-- Pinned so consumers keep referencing _content/Blazored.TextEditor/... : without this the base path follows PackageId and every consuming index.html would have to change. -->
-    <StaticWebAssetBasePath>Blazored.TextEditor</StaticWebAssetBasePath>
+    <!-- Pinned so consumers keep referencing _content/Blazored.TextEditor/... : without this the base path follows PackageId and every consuming index.html would have to change. The _content/ prefix is part of the value - this property REPLACES the whole default base path, it does not just substitute the package-id segment. 1.2.0 shipped without it and served the files from /Blazored.TextEditor/, so consumers 404ed. -->
+    <StaticWebAssetBasePath>_content/Blazored.TextEditor</StaticWebAssetBasePath>
     <PackageTags>Blazor;Razor;Components;TextEditor;Rich Text;Quill;QuillJS;ASP.NET Core;CSharp;Web</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/gismofx/TextEditor</PackageProjectUrl>
@@ -31,7 +31,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>1.2.0</Version>
+    <Version>1.2.1</Version>
     <PackageReleaseNotes>Fork of Blazored.TextEditor 1.1.3, which is deprecated upstream. Adds one-way and two-way content binding and multiple editors per page.</PackageReleaseNotes>
   </PropertyGroup>
 

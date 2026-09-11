@@ -1,4 +1,4 @@
-name: Publish NuGet Package
+﻿name: Publish NuGet Package
 
 on:
   release:
@@ -6,9 +6,10 @@ on:
   workflow_dispatch:     # Or run by hand from the Actions tab
     inputs:
       version:
-        description: 'Package version (e.g. 1.2.0)'
+        # Deliberately no default: a pre-filled version is how a run silently re-packs an
+        # already-published version, which --skip-duplicate then turns into a green no-op.
+        description: 'Package version to publish (e.g. 1.2.1)'
         required: true
-        default: '1.2.0'
 
 jobs:
   publish:
@@ -30,7 +31,7 @@ jobs:
             8.x
             10.x
 
-      # A release supplies the version through the tag (v1.2.0 -> 1.2.0); a manual run supplies
+      # A release supplies the version through the tag (v1.2.1 -> 1.2.1); a manual run supplies
       # it as an input. Either way the version comes from outside the csproj, so a release never
       # silently ships whatever number happened to be committed.
       - name: Extract version from tag or input
@@ -49,8 +50,8 @@ jobs:
           -p:PackageVersion=${{ steps.version.outputs.VERSION }}
           --output ./nupkg
 
-      # Same guard as the build workflow: prove the deliverable is intact before it is public,
-      # because an unlisted-and-replaced version is the only remedy afterwards.
+      # Prove the deliverable is intact before it is public: an unlisted-and-replaced version is
+      # the only remedy afterwards.
       - name: Verify package contents
         run: |
           set -e
@@ -66,6 +67,11 @@ jobs:
             unzip -l "$pkg" | grep -q "$entry" || { echo "MISSING FROM PACKAGE: $entry"; exit 1; }
           done
           echo "All expected entries present."
+          # The base path is a contract with every consumer: StaticWebAssetBasePath REPLACES the
+          # whole default, so a value missing the _content/ prefix serves the JS somewhere no
+          # consuming index.html looks. 1.2.0 and 1.2.1 both shipped that way.
+          unzip -p "$pkg" build/Microsoft.AspNetCore.StaticWebAssets.props | grep -q "<BasePath>_content/Blazored.TextEditor</BasePath>" || { echo "WRONG BASE PATH in the package - expected _content/Blazored.TextEditor"; exit 1; }
+          echo "Base path correct."
 
       # Trusted publishing: no API key is stored in this repo. It requires a policy on
       # nuget.org for this owner, this repository and this workflow file - without one, this
@@ -78,3 +84,22 @@ jobs:
 
       - name: Push to NuGet
         run: dotnet nuget push ./nupkg/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --skip-duplicate
+
+      # A successful push step is NOT evidence that this version reached nuget.org:
+      # --skip-duplicate reports success when the version already existed, so a run with the
+      # wrong version input looks identical to a real publish. Ask the far side.
+      - name: Confirm the version is live on nuget.org
+        run: |
+          set -e
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          echo "Waiting for CPE.BlazorQuill $VERSION to appear..."
+          for i in $(seq 1 20); do
+            if curl -s https://api.nuget.org/v3-flatcontainer/cpe.blazorquill/index.json | grep -q "\"$VERSION\""; then
+              echo "Live on nuget.org: $VERSION"
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "NOT PUBLISHED: $VERSION never appeared on nuget.org after 5 minutes."
+          echo "Most likely the version input names a version that already exists, which --skip-duplicate silently skips."
+          exit 1
