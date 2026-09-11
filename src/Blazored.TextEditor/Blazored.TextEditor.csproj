@@ -31,7 +31,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>1.2.1</Version>
+    <Version>1.2.2</Version>
     <PackageReleaseNotes>Fork of Blazored.TextEditor 1.1.3, which is deprecated upstream. Adds one-way and two-way content binding and multiple editors per page.</PackageReleaseNotes>
   </PropertyGroup>
 
